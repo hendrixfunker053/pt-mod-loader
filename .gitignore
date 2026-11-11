@@ -1,0 +1,9 @@
+.gradle/
+build/
+local.properties
+*.jks
+*.keystore
+.idea/
+# Nunca subir el juego ni mods de terceros
+games/
+*.win
