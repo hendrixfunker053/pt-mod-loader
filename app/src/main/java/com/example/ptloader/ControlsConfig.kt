@@ -1,6 +1,7 @@
 package com.example.ptloader
 
 import android.view.KeyEvent
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 
@@ -23,10 +24,10 @@ object ControlsConfig {
             KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN,
         ),
         listOf(
-            TouchButton("z", KeyEvent.KEYCODE_Z, 0.90f, 0.80f, 0.22f),
-            TouchButton("x", KeyEvent.KEYCODE_X, 0.77f, 0.86f, 0.22f),
-            TouchButton("c", KeyEvent.KEYCODE_C, 0.77f, 0.64f, 0.22f),
-            TouchButton("shift", KeyEvent.KEYCODE_SHIFT_LEFT, 0.90f, 0.56f, 0.22f),
+            TouchButton("z", KeyEvent.KEYCODE_Z, 0.91f, 0.78f, 0.18f),
+            TouchButton("x", KeyEvent.KEYCODE_X, 0.78f, 0.86f, 0.18f),
+            TouchButton("c", KeyEvent.KEYCODE_C, 0.78f, 0.62f, 0.18f),
+            TouchButton("shift", KeyEvent.KEYCODE_SHIFT_LEFT, 0.91f, 0.54f, 0.18f),
             TouchButton("pause", KeyEvent.KEYCODE_ESCAPE, 0.50f, 0.10f, 0.14f),
             TouchButton("debug", KeyEvent.KEYCODE_F1, 0.62f, 0.10f, 0.14f),
         ),
@@ -72,11 +73,38 @@ object ControlsConfig {
                 else TouchButton(
                     b.getString("sprite"), k,
                     b.getDouble("x").toFloat(), b.getDouble("y").toFloat(),
-                    b.optDouble("size", 0.22).toFloat(),
+                    b.optDouble("size", 0.18).toFloat(),
                 )
             }
         } ?: def.buttons
 
         return ControlsLayout(joy, buttons)
+    }
+
+    /** 0 Pizza (joystick + botones) · 1 Solo botones · 2 Sin controles · 3 Personalizado (controls.json del juego) */
+    fun forPreset(preset: Int, file: File): ControlsLayout = when (preset) {
+        1 -> default().copy(joystick = null)
+        2 -> ControlsLayout(null, emptyList())
+        3 -> load(file)
+        else -> default()
+    }
+
+    fun save(file: File, l: ControlsLayout) {
+        val o = JSONObject()
+        val j = l.joystick
+        if (j == null) o.put("joystick", JSONObject.NULL)
+        else o.put("joystick", JSONObject()
+            .put("x", j.x.toDouble()).put("y", j.y.toDouble())
+            .put("size", j.size.toDouble()).put("deadzone", j.deadzone.toDouble())
+            .put("left", KeyEvent.keyCodeToString(j.left)).put("right", KeyEvent.keyCodeToString(j.right))
+            .put("up", KeyEvent.keyCodeToString(j.up)).put("down", KeyEvent.keyCodeToString(j.down)))
+        val arr = JSONArray()
+        l.buttons.forEach { b ->
+            arr.put(JSONObject().put("sprite", b.sprite).put("key", KeyEvent.keyCodeToString(b.keyCode))
+                .put("x", b.x.toDouble()).put("y", b.y.toDouble()).put("size", b.size.toDouble()))
+        }
+        o.put("buttons", arr)
+        file.parentFile?.mkdirs()
+        file.writeText(o.toString(2))
     }
 }
